@@ -19,11 +19,28 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
   const age = calculateAge(birthday.date);
   const isBdayToday = isToday(birthday.date);
 
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limit to 11 digits
+    const truncated = numbers.slice(0, 11);
+    
+    // Apply mask (99) 9 9999-9999
+    if (truncated.length <= 2) return truncated.replace(/^(\d{0,2})/, '($1');
+    if (truncated.length <= 3) return truncated.replace(/^(\d{2})(\d{0,1})/, '($1) $2');
+    if (truncated.length <= 7) return truncated.replace(/^(\d{2})(\d{1})(\d{0,4})/, '($1) $2 $3');
+    return truncated.replace(/^(\d{2})(\d{1})(\d{4})(\d{0,4})/, '($1) $2 $3-$4');
+  };
+
   const handleWhatsappClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (birthday.whatsapp) {
+      const cleanNumber = birthday.whatsapp.replace(/\D/g, '');
       const message = `Feliz aniversário, ${birthday.name}! 🎉🎂 Tudo de bom hoje e sempre!`;
-      const url = `https://wa.me/${birthday.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      // Always prepend 55 for Brazil if not present (assuming local numbers)
+      const fullNumber = cleanNumber.startsWith('55') && cleanNumber.length > 11 ? cleanNumber : `55${cleanNumber}`;
+      const url = `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
       window.open(url, '_blank');
     }
   };
@@ -78,27 +95,26 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
-            {age} anos
-          </span>
+          <div className="flex items-center gap-2">
+            {birthday.whatsapp && (
+              <button 
+                onClick={handleWhatsappClick}
+                className="w-7 h-7 flex items-center justify-center bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                title="Enviar WhatsApp"
+              >
+                <MessageCircle size={14} />
+              </button>
+            )}
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+              {age} anos
+            </span>
+          </div>
           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
             {isBdayToday ? '🎈 Hoje!' : `Faltam ${daysLeft} d`}
           </span>
         </div>
       </div>
       
-      <div className="absolute top-4 right-4 flex gap-2">
-        {birthday.whatsapp && (
-          <button 
-            onClick={handleWhatsappClick}
-            className="w-8 h-8 flex items-center justify-center bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
-            title="Enviar WhatsApp"
-          >
-            <MessageCircle size={16} />
-          </button>
-        )}
-      </div>
-
       {/* Botão de Excluir - Área de toque otimizada */}
       <button 
         onClick={(e) => {
@@ -178,6 +194,21 @@ const App: React.FC = () => {
         setDeferredPrompt(null);
       }
     }
+  };
+
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limit to 11 digits
+    const truncated = numbers.slice(0, 11);
+    
+    // Apply mask (99) 9 9999-9999
+    if (truncated.length === 0) return '';
+    if (truncated.length <= 2) return truncated.replace(/^(\d{0,2})/, '($1');
+    if (truncated.length <= 3) return truncated.replace(/^(\d{2})(\d{0,1})/, '($1) $2');
+    if (truncated.length <= 7) return truncated.replace(/^(\d{2})(\d{1})(\d{0,4})/, '($1) $2 $3');
+    return truncated.replace(/^(\d{2})(\d{1})(\d{4})(\d{0,4})/, '($1) $2 $3-$4');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -434,7 +465,13 @@ const App: React.FC = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-300">WhatsApp</label>
-                <input type="tel" placeholder="Ex: 11999999999" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white border-none focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <input 
+                  type="tel" 
+                  placeholder="(99) 9 9999-9999" 
+                  value={formData.whatsapp} 
+                  onChange={e => setFormData({...formData, whatsapp: formatPhoneNumber(e.target.value)})} 
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white border-none focus:ring-2 focus:ring-indigo-500 outline-none" 
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-300">Observação</label>
