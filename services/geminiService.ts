@@ -4,7 +4,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 export const getSuggestedEmoji = async (name: string, category: string, observation?: string): Promise<string> => {
   try {
     // Create instance inside the function to ensure it uses the current API key context
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Sugira um único emoji que melhor represente um presente ou a relação para esta pessoa:
