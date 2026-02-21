@@ -204,7 +204,7 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-20 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-md px-6 pt-10 pb-4 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold flex items-center gap-2 dark:text-white">
-            Niver <span className="text-indigo-500">🎂</span>
+            ReyNiver <span className="text-indigo-500">🎂</span>
           </h1>
           <div className="flex gap-2">
             <button 
@@ -400,7 +400,7 @@ const App: React.FC = () => {
                 <button onClick={() => setSettings({...settings, darkMode: !settings.darkMode})} className={`w-12 h-6 rounded-full relative transition-colors ${settings.darkMode ? 'bg-indigo-600' : 'bg-gray-300'}`}><div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${settings.darkMode ? 'translate-x-6' : ''}`} /></button>
               </div>
               <div className="pt-4 border-t border-gray-100 dark:border-gray-700 text-center">
-                <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Niver PWA v1.1</p>
+                <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">ReyNiver PWA v1.1</p>
               </div>
             </div>
           </div>
