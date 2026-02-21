@@ -3,7 +3,7 @@ import { Birthday, Settings, Category } from './types';
 import { isToday, getDaysUntil, calculateAge, formatDate, getMonthName, getMonthFromDateString } from './utils/dateUtils';
 import { getSuggestedEmoji } from './services/geminiService';
 import useLocalStorage from './hooks/useLocalStorage';
-import { Plus, Search, Calendar as CalendarIcon, Settings as SettingsIcon, Trash2, Edit2, X, Bell, Moon, Sun, Gift, AlertCircle, List, Download } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, Settings as SettingsIcon, Trash2, Edit2, X, Bell, Moon, Sun, Gift, AlertCircle, List, Download, MessageCircle } from 'lucide-react';
 
 // Sub-components
 interface BirthdayCardProps {
@@ -19,6 +19,15 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
   const age = calculateAge(birthday.date);
   const isBdayToday = isToday(birthday.date);
 
+  const handleWhatsappClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (birthday.whatsapp) {
+      const message = `Feliz aniversário, ${birthday.name}! 🎉🎂 Tudo de bom hoje e sempre!`;
+      const url = `https://wa.me/${birthday.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
+    }
+  };
+
   if (compact) {
     return (
       <div 
@@ -32,10 +41,21 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
           <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{birthday.name}</h4>
           <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(birthday.date)}</p>
         </div>
-        <div className="text-right">
-           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
-            {age}
-          </span>
+        <div className="flex items-center gap-2">
+          {birthday.whatsapp && (
+             <button
+              onClick={handleWhatsappClick}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 transition-colors"
+              title="Enviar mensagem"
+            >
+              <MessageCircle size={14} />
+            </button>
+          )}
+          <div className="text-right">
+             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${highlight ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+              {age}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -67,6 +87,18 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
         </div>
       </div>
       
+      <div className="absolute top-4 right-4 flex gap-2">
+        {birthday.whatsapp && (
+          <button 
+            onClick={handleWhatsappClick}
+            className="w-8 h-8 flex items-center justify-center bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+            title="Enviar WhatsApp"
+          >
+            <MessageCircle size={16} />
+          </button>
+        )}
+      </div>
+
       {/* Botão de Excluir - Área de toque otimizada */}
       <button 
         onClick={(e) => {
@@ -74,7 +106,7 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
           e.stopPropagation();
           onDelete(e);
         }} 
-        className="absolute -top-2 -right-2 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 text-red-500 rounded-full shadow-lg border border-red-50 dark:border-red-900/20 active:bg-red-50 transition-colors z-10"
+        className="absolute -top-2 -right-2 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 text-red-500 rounded-full shadow-lg border border-red-50 dark:border-red-900/20 active:bg-red-50 transition-colors z-10 opacity-0 group-hover:opacity-100 focus:opacity-100"
         title="Excluir"
       >
         <Trash2 size={16} />
@@ -106,11 +138,13 @@ const App: React.FC = () => {
     date: string;
     category: Category;
     observation: string;
+    whatsapp: string;
   }>({
     name: '',
     date: '',
     category: 'Amigo',
     observation: '',
+    whatsapp: '',
   });
 
   useEffect(() => {
@@ -154,7 +188,15 @@ const App: React.FC = () => {
     const suggestedEmoji = await getSuggestedEmoji(formData.name, formData.category, formData.observation);
     
     if (editingId) {
-      setBirthdays(prev => prev.map(b => b.id === editingId ? { ...b, name: formData.name, date: formData.date, category: formData.category, observation: formData.observation, emoji: suggestedEmoji } : b));
+      setBirthdays(prev => prev.map(b => b.id === editingId ? { 
+        ...b, 
+        name: formData.name, 
+        date: formData.date, 
+        category: formData.category, 
+        observation: formData.observation, 
+        whatsapp: formData.whatsapp,
+        emoji: suggestedEmoji 
+      } : b));
     } else {
       const newBirthday: Birthday = { 
         id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
@@ -162,6 +204,7 @@ const App: React.FC = () => {
         date: formData.date, 
         category: formData.category, 
         observation: formData.observation, 
+        whatsapp: formData.whatsapp,
         emoji: suggestedEmoji 
       };
       setBirthdays(prev => [...prev, newBirthday]);
@@ -173,7 +216,7 @@ const App: React.FC = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', date: '', category: 'Amigo', observation: '' });
+    setFormData({ name: '', date: '', category: 'Amigo', observation: '', whatsapp: '' });
     setEditingId(null);
   };
 
@@ -189,7 +232,13 @@ const App: React.FC = () => {
   };
 
   const startEdit = (b: Birthday) => {
-    setFormData({ name: b.name, date: b.date, category: b.category, observation: b.observation || '' });
+    setFormData({ 
+      name: b.name, 
+      date: b.date, 
+      category: b.category, 
+      observation: b.observation || '',
+      whatsapp: b.whatsapp || ''
+    });
     setEditingId(b.id);
     setIsModalOpen(true);
   };
@@ -382,6 +431,10 @@ const App: React.FC = () => {
                     <button key={cat} type="button" onClick={() => setFormData({...formData, category: cat})} className={`px-3 py-1.5 rounded-full text-sm transition-colors ${formData.category === cat ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>{cat}</button>
                   ))}
                 </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-300">WhatsApp</label>
+                <input type="tel" placeholder="Ex: 11999999999" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white border-none focus:ring-2 focus:ring-indigo-500 outline-none" />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-300">Observação</label>

@@ -8,6 +8,7 @@ export interface Birthday {
   observation?: string;
   category: Category;
   emoji: string;
+  whatsapp?: string;
 }
 
 export interface Settings {
