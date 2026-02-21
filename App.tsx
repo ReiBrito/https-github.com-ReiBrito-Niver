@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Birthday, Settings, Category } from './types';
 import { isToday, getDaysUntil, calculateAge, formatDate, getMonthName, getMonthFromDateString } from './utils/dateUtils';
 import { getSuggestedEmoji } from './services/geminiService';
 import useLocalStorage from './hooks/useLocalStorage';
-import { Plus, Search, Calendar as CalendarIcon, Settings as SettingsIcon, Trash2, Edit2, X, Bell, Moon, Sun, Gift, AlertCircle, List } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, Settings as SettingsIcon, Trash2, Edit2, X, Bell, Moon, Sun, Gift, AlertCircle, List, Download } from 'lucide-react';
 
 // Sub-components
 interface BirthdayCardProps {
@@ -87,6 +86,7 @@ const BirthdayCard: React.FC<BirthdayCardProps> = ({ birthday, highlight, onEdit
 const App: React.FC = () => {
   const [birthdays, setBirthdays] = useLocalStorage<Birthday[]>('niver_birthdays', []);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const [settings, setSettings] = useLocalStorage<Settings>('niver_settings', { 
     darkMode: false, 
@@ -113,7 +113,18 @@ const App: React.FC = () => {
     observation: '',
   });
 
-  // Removed manual localStorage effects as useLocalStorage handles it
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
     if (settings.darkMode) {
@@ -123,7 +134,17 @@ const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
       document.body.className = 'bg-gray-50 transition-colors duration-300';
     }
-  }, [settings.darkMode]); // Only depend on darkMode changes
+  }, [settings.darkMode]);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,6 +420,14 @@ const App: React.FC = () => {
                 </div>
                 <button onClick={() => setSettings({...settings, darkMode: !settings.darkMode})} className={`w-12 h-6 rounded-full relative transition-colors ${settings.darkMode ? 'bg-indigo-600' : 'bg-gray-300'}`}><div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${settings.darkMode ? 'translate-x-6' : ''}`} /></button>
               </div>
+
+              {deferredPrompt && (
+                <button onClick={handleInstallClick} className="w-full py-3 rounded-xl bg-indigo-600 text-white font-medium flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-indigo-500/20">
+                  <Download size={20} />
+                  Instalar App
+                </button>
+              )}
+
               <div className="pt-4 border-t border-gray-100 dark:border-gray-700 text-center">
                 <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">ReyNiver PWA v1.1</p>
               </div>
